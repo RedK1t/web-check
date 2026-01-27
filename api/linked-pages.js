@@ -1,5 +1,5 @@
 import axios from "axios";
-import cheerio from "cheerio";
+import * as cheerio from "cheerio";
 import { URL } from "url";
 import middleware from "./_common/middleware.js";
 
@@ -59,22 +59,20 @@ const linkedPagesHandler = async (url) => {
     // If there were no links, then mark as skipped and show reasons
     if (internalLinks.length === 0 && externalLinks.length === 0) {
       return {
-        statusCode: 400,
-        body: {
-          skipped:
-            "No internal or external links found. " +
-            "This may be due to the website being dynamically rendered, using a client-side framework (like React), and without SSR enabled. " +
-            "That would mean that the static HTML returned from the HTTP request doesn't contain any meaningful content for Web-Check to analyze. " +
-            "You can rectify this by using a headless browser to render the page instead.",
-        },
+        skipped:
+          "No internal or external links found. " +
+          "This may be due to the website being dynamically rendered, using a client-side framework (like React), and without SSR enabled. " +
+          "That would mean that the static HTML returned from the HTTP request doesn't contain any meaningful content for Web-Check to analyze. " +
+          "You can rectify this by using a headless browser to render the page instead.",
       };
     }
 
     return { internal: internalLinks, external: externalLinks };
   } catch (error) {
     return {
-      statusCode: 500,
-      body: { error: `Failed to fetch or parse the page: ${error.message}` },
+      error: `Failed to fetch or parse the page: ${error.message}`,
+      internal: [],
+      external: [],
     };
   }
 };
