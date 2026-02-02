@@ -1,14 +1,33 @@
 import axios from "axios";
 import puppeteer from "puppeteer-core";
-import chromium from "chrome-aws-lambda";
 import middleware from "./_common/middleware.js";
 
 const getPuppeteerCookies = async (url) => {
+  // Try to dynamically import chrome-aws-lambda; if it's not installed, fall back to sensible defaults
+  let chromium = null;
+  try {
+    const mod = await import("chrome-aws-lambda");
+    chromium = mod.default || mod;
+  } catch (err) {
+    chromium = null;
+  }
+
+  const executablePath =
+    process.env.CHROMIUM_PATH ||
+    process.env.PUPPETEER_EXECUTABLE_PATH ||
+    (chromium && chromium.executablePath ? await chromium.executablePath : "/usr/bin/chromium");
+
+  const args = [
+    "--no-sandbox",
+    "--disable-setuid-sandbox",
+    ...(chromium && chromium.args ? chromium.args : []),
+  ];
+
   const browser = await puppeteer.launch({
-    args: chromium.args,
-    defaultViewport: chromium.defaultViewport,
-    executablePath: await chromium.executablePath,
-    headless: chromium.headless,
+    args,
+    defaultViewport: chromium && chromium.defaultViewport ? chromium.defaultViewport : null,
+    executablePath,
+    headless: chromium && typeof chromium.headless !== "undefined" ? chromium.headless : true,
   });
 
   try {

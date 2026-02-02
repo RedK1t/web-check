@@ -5,9 +5,15 @@ docker build -t web-check .
 ```
 
 ```bash
-docker run --name web -p 3000:3000 web-check
+docker run --name web -p 3001:3001 web-check
+```
+
+# Development
+
+```bash
+npm i
 ```
 
 ```bash
-docker run --name web -p 3000:3000 web-check
+npm run dev
 ```

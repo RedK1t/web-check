@@ -1,65 +1,36 @@
-# --- STAGE 1: BUILD ---
-# Switched to 22-bookworm-slim for 2026 LTS stability
 ARG NODE_VERSION=22
 ARG DEBIAN_VERSION=bookworm-slim
-FROM node:${NODE_VERSION}-${DEBIAN_VERSION} AS build
+FROM node:${NODE_VERSION}-${DEBIAN_VERSION}
 
 WORKDIR /app
 
-# Install build essentials for native modules
-RUN apt-get update && apt-get install -y \
-    make g++ \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --network-timeout 100000
-
-COPY . .
-
-# 1. Run your build
-RUN yarn build --production
-
-# 2. Delete everything in node_modules and install ONLY production deps
-# This is the "No Unstability" way to prune with Yarn
-RUN rm -rf node_modules && \
-    yarn install --production --frozen-lockfile --network-timeout 100000 && \
-    yarn cache clean
-
-# --- STAGE 2: FINAL ---
-FROM node:${NODE_VERSION}-${DEBIAN_VERSION} AS final
-
-WORKDIR /app
-
-# Install Chromium + Rendering Dependencies + Basic Fonts
-RUN apt-get update && apt-get install -y \
+# Install Chromium and minimal runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
-    fonts-liberation \
-    fonts-freefont-ttf \
     libnss3 \
     libgbm1 \
     libasound2 \
-    --no-install-recommends && \
-    apt-get autoremove -y && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    fonts-liberation \
+    ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
-# Environment Variables
+# Copy dependency manifests and install production deps only
+COPY package*.json ./
+RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm ci --only=production --no-audit --prefer-offline && \
+    npm cache clean --force
+
+# Copy app source
+COPY . .
+
+# Environment variables
 ENV NODE_ENV=production \
-    CHROME_PATH='/usr/bin/chromium' \
-    PUPPETEER_EXECUTABLE_PATH='/usr/bin/chromium' \
+    CHROMIUM_PATH=/usr/bin/chromium \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PORT=3000
+    PORT=3001
 
-# Copy assets from build stage
-COPY --from=build /app/package.json /app/yarn.lock ./
-COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/api ./api
-COPY --from=build /app/server.js ./server.js
-
-# Run as non-privileged user
+# Use non-privileged user
 USER node
 
-EXPOSE 3000
+EXPOSE 3001
 
-CMD ["yarn", "start"]
+CMD ["npm", "start"]

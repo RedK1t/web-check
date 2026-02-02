@@ -9,6 +9,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = 3001;
 
 app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // The absolute path to your API folder
 const apiPath = path.resolve(__dirname, 'api');
@@ -32,9 +34,46 @@ if (fs.existsSync(apiPath)) {
         const handler = module.default || module.handler;
 
         if (handler) {
-          // Pass req and res directly to the handler
-          // The middleware inside the API files will handle the rest
-          app.all(routePath, (req, res) => handler(req, res));
+          // If the handler follows Netlify's (event, context, callback) signature
+          // adapt it to Express by building an event and callback wrapper.
+          if (handler.length === 3) {
+            app.all(routePath, (req, res) => {
+              const event = {
+                queryStringParameters: req.query || {},
+                headers: req.headers || {},
+                httpMethod: req.method,
+                body: req.body,
+                path: req.path,
+              };
+              const context = {};
+
+              const callback = (err, result) => {
+                if (err) {
+                  return res.status(500).json({ error: err.message || err });
+                }
+
+                if (result && typeof result === 'object' && 'statusCode' in result) {
+                  // Netlify-style response
+                  const headers = result.headers || {};
+                  Object.keys(headers).forEach((k) => res.setHeader(k, headers[k]));
+                  return res.status(result.statusCode).send(result.body);
+                }
+
+                // Fallback: return JSON
+                return res.json(result);
+              };
+
+              try {
+                handler(event, context, callback);
+              } catch (e) {
+                callback(e);
+              }
+            });
+          } else {
+            // Vercel/Node style handler (req, res)
+            app.all(routePath, (req, res) => handler(req, res));
+          }
+
           console.log(`✅ Registered: ${routePath}`);
         }
       } catch (err) {
@@ -50,5 +89,5 @@ app.get('/api', (req, res) => {
 
 app.listen(port, () => {
   console.log(`\n🚀 Server running at http://localhost:${port}`);
-  console.log(`Test it: http://localhost:${port}/api/dns?url=google.com`);
+  console.log(`Test it: http://localhost:${port}/api/dns-server?url=google.com`);
 });
