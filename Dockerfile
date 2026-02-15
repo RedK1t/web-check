@@ -4,14 +4,33 @@ FROM node:${NODE_VERSION}-${DEBIAN_VERSION}
 
 WORKDIR /app
 
-# Install Chromium and minimal runtime dependencies
+# Install Chromium and all required dependencies for Puppeteer
 RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
+    chromium-sandbox \
     libnss3 \
     libgbm1 \
     libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libcups2 \
+    libdbus-1-3 \
+    libdrm2 \
+    libgtk-3-0 \
+    libnspr4 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libxss1 \
+    libxtst6 \
     fonts-liberation \
+    fonts-noto-color-emoji \
+    fontconfig \
     ca-certificates \
+    wget \
+    curl \
+    gnupg \
   && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency manifests and install production deps only
@@ -24,12 +43,17 @@ COPY . .
 
 # Environment variables
 ENV NODE_ENV=production \
-    CHROMIUM_PATH=/usr/bin/chromium \
     PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
     PORT=3001
 
-# Use non-privileged user
-USER node
+# Use non-privileged user with proper permissions
+RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
+    && mkdir -p /home/pptruser/Downloads \
+    && chown -R pptruser:pptruser /home/pptruser \
+    && chown -R pptruser:pptruser /app
+
+USER pptruser
 
 EXPOSE 3001
 
