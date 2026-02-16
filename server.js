@@ -10,10 +10,36 @@ const port = 3001;
 
 // Configure CORS to allow specific frontend domains
 const corsOptions = {
-  origin: [
-    "http://localhost:5173", // Development frontend
-    "https://redkit.pages.dev/", // Production frontend
-  ],
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173", // Local development frontend
+      "https://redkit.pages.dev", // Production frontend
+      "http://localhost:3000", // Alternative local development
+      "http://127.0.0.1:5173", // Alternative localhost format
+      "http://localhost:3001", // Local API port
+    ];
+
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+
+    // Check if the origin is in the allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow any localhost port for development
+    if (origin.match(/^http:\/\/localhost:\d+$/)) {
+      return callback(null, true);
+    }
+
+    // Allow any 127.0.0.1 port for development
+    if (origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
+      return callback(null, true);
+    }
+
+    console.log(`CORS blocked origin: ${origin}`);
+    callback(new Error(`Origin ${origin} not allowed by CORS`));
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
   credentials: true,

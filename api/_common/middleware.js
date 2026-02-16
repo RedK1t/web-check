@@ -8,7 +8,12 @@ const TIMEOUT = process.env.API_TIMEOUT_LIMIT
   : 60000;
 
 // If present, set CORS allowed origins for responses
-const ALLOWED_ORIGINS = process.env.API_CORS_ORIGIN || "*";
+const ALLOWED_ORIGINS = [
+  "http://localhost:5173", // Local development frontend
+  "http://localhost:3000", // Alternative local development
+  "http://127.0.0.1:5173", // Alternative localhost format
+  "https://redkit.pages.dev", // Production frontend
+];
 
 // Disable everything :( Setting this env var will turn off the instance, and show message
 const DISABLE_EVERYTHING = !!process.env.VITE_DISABLE_EVERYTHING;
@@ -26,8 +31,24 @@ if (process.env.PLATFORM) {
 // Define the headers to be returned with each response
 const getHeaders = (requestHeaders = {}) => {
   const origin = requestHeaders.origin || requestHeaders.Origin;
-  const allowOrigin =
-    ALLOWED_ORIGINS === "*" && origin ? origin : ALLOWED_ORIGINS;
+
+  // Check if the origin is allowed
+  let allowOrigin = "*"; // Default fallback
+  if (origin) {
+    // Check if origin is in allowed list
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      allowOrigin = origin;
+    }
+    // Allow any localhost port for development
+    else if (origin.match(/^http:\/\/localhost:\d+$/)) {
+      allowOrigin = origin;
+    }
+    // Allow any 127.0.0.1 port for development
+    else if (origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
+      allowOrigin = origin;
+    }
+  }
+
   return {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Credentials": "true",
