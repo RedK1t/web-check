@@ -17,3 +17,5 @@ npm i
 ```bash
 npm run dev
 ```
+
+# Kobry Manga
