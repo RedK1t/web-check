@@ -30,27 +30,9 @@ if (process.env.PLATFORM) {
 
 // Define the headers to be returned with each response
 const getHeaders = (requestHeaders = {}) => {
-  const origin = requestHeaders.origin || requestHeaders.Origin;
-
-  // Check if the origin is allowed
-  let allowOrigin = "*"; // Default fallback
-  if (origin) {
-    // Check if origin is in allowed list
-    if (ALLOWED_ORIGINS.includes(origin)) {
-      allowOrigin = origin;
-    }
-    // Allow any localhost port for development
-    else if (origin.match(/^http:\/\/localhost:\d+$/)) {
-      allowOrigin = origin;
-    }
-    // Allow any 127.0.0.1 port for development
-    else if (origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
-      allowOrigin = origin;
-    }
-  }
-
+  // Allow ALL origins - disable CORS restrictions
   return {
-    "Access-Control-Allow-Origin": allowOrigin,
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Credentials": "true",
     "Content-Type": "application/json;charset=UTF-8",
     "Access-Control-Allow-Methods": "GET,OPTIONS,PATCH,DELETE,POST,PUT",

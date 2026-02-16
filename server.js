@@ -8,45 +8,20 @@ const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = 3001;
 
-// Configure CORS to allow specific frontend domains
-const corsOptions = {
-  origin: function (origin, callback) {
-    const allowedOrigins = [
-      "http://localhost:5173", // Local development frontend
-      "https://redkit.pages.dev", // Production frontend
-      "http://localhost:3000", // Alternative local development
-      "http://127.0.0.1:5173", // Alternative localhost format
-      "http://localhost:3001", // Local API port
-    ];
+// Configure CORS to allow ALL origins - disable CORS restrictions
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Credentials", "true");
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-
-    // Check if the origin is in the allowed list
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-
-    // Allow any localhost port for development
-    if (origin.match(/^http:\/\/localhost:\d+$/)) {
-      return callback(null, true);
-    }
-
-    // Allow any 127.0.0.1 port for development
-    if (origin.match(/^http:\/\/127\.0\.0\.1:\d+$/)) {
-      return callback(null, true);
-    }
-
-    console.log(`CORS blocked origin: ${origin}`);
-    callback(new Error(`Origin ${origin} not allowed by CORS`));
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true,
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
+  // Handle preflight requests
+  if (req.method === "OPTIONS") {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+});
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
