@@ -2,32 +2,44 @@ import fs from "fs";
 import path from "path";
 import cors from "cors";
 import express from "express";
-import { fileURLToPath } from 'url';
+import { fileURLToPath } from "url";
 
 const app = express();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const port = 3001;
 
-app.use(cors());
+// Configure CORS to allow specific frontend domains
+const corsOptions = {
+  origin: [
+    "http://localhost:5173", // Development frontend
+    "https://redkit.pages.dev/", // Production frontend
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // The absolute path to your API folder
-const apiPath = path.resolve(__dirname, 'api');
+const apiPath = path.resolve(__dirname, "api");
 
 console.log(`\n--- DEBUG INFO ---`);
 console.log(`API Folder Path: ${apiPath}`);
 
 if (fs.existsSync(apiPath)) {
   const files = fs.readdirSync(apiPath);
-  
+
   for (const file of files) {
-    if (file.endsWith('.js') && !file.startsWith('_')) {
-      const routeName = file.replace('.js', '');
+    if (file.endsWith(".js") && !file.startsWith("_")) {
+      const routeName = file.replace(".js", "");
       const routePath = `/api/${routeName}`;
       const fullPath = path.join(apiPath, file);
-      
-      const fileUrl = `file:///${fullPath.replace(/\\/g, '/')}`;
+
+      const fileUrl = `file:///${fullPath.replace(/\\/g, "/")}`;
 
       try {
         const module = await import(fileUrl);
@@ -52,10 +64,16 @@ if (fs.existsSync(apiPath)) {
                   return res.status(500).json({ error: err.message || err });
                 }
 
-                if (result && typeof result === 'object' && 'statusCode' in result) {
+                if (
+                  result &&
+                  typeof result === "object" &&
+                  "statusCode" in result
+                ) {
                   // Netlify-style response
                   const headers = result.headers || {};
-                  Object.keys(headers).forEach((k) => res.setHeader(k, headers[k]));
+                  Object.keys(headers).forEach((k) =>
+                    res.setHeader(k, headers[k]),
+                  );
                   return res.status(result.statusCode).send(result.body);
                 }
 
@@ -83,11 +101,13 @@ if (fs.existsSync(apiPath)) {
   }
 }
 
-app.get('/api', (req, res) => {
-    res.json({ message: "API is running. Use /api/[endpoint]?url=..." });
+app.get("/api", (req, res) => {
+  res.json({ message: "API is running. Use /api/[endpoint]?url=..." });
 });
 
 app.listen(port, () => {
   console.log(`\n🚀 Server running at http://localhost:${port}`);
-  console.log(`Test it: http://localhost:${port}/api/dns-server?url=google.com`);
+  console.log(
+    `Test it: http://localhost:${port}/api/dns-server?url=google.com`,
+  );
 });
