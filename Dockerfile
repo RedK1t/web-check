@@ -41,11 +41,8 @@ RUN PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true npm ci --only=production --no-audit --
 # Copy app source
 COPY . .
 
-# Environment variables
-ENV NODE_ENV=production \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
-    PORT=3001
+# Runtime env vars (NODE_ENV, PUPPETEER_*, PORT) are injected from web-check/.env
+# via docker-compose env_file — the single source of truth.
 
 # Use non-privileged user with proper permissions
 RUN groupadd -r pptruser && useradd -r -g pptruser -G audio,video pptruser \
