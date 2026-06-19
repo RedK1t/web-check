@@ -27,6 +27,10 @@ const resolveChromium = async () => {
     // crashes the tab ("Not attached to an active page") on heavier pages.
     // This makes Chromium write shared memory to /tmp instead, avoiding the crash.
     "--disable-dev-shm-usage",
+    // Many real targets (e.g. demo/test sites) have invalid TLS certs. Without
+    // this, page.goto aborts with ERR_CERT_* and the tab detaches, so the
+    // screenshot fails with the same "Not attached to an active page" error.
+    "--ignore-certificate-errors",
     ...(chromium && chromium.args ? chromium.args : []),
   ];
 
@@ -51,6 +55,7 @@ const screenshotHandler = async (url) => {
   try {
     browser = await puppeteer.launch({
       args,
+      acceptInsecureCerts: true,
       defaultViewport: { width: 1280, height: 800 },
       executablePath,
       headless:
