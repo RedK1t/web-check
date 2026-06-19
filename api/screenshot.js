@@ -23,6 +23,10 @@ const resolveChromium = async () => {
     "--disable-setuid-sandbox",
     "--disable-gpu",
     "--hide-scrollbars",
+    // In Docker, /dev/shm defaults to 64MB. Chromium uses it for rendering and
+    // crashes the tab ("Not attached to an active page") on heavier pages.
+    // This makes Chromium write shared memory to /tmp instead, avoiding the crash.
+    "--disable-dev-shm-usage",
     ...(chromium && chromium.args ? chromium.args : []),
   ];
 
